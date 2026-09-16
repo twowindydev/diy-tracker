@@ -7,6 +7,9 @@ import StatusControls from "@/components/StatusControls";
 import MaterialsList from "@/components/MaterialsList";
 import PhotoGallery from "@/components/PhotoGallery";
 import DeleteJobButton from "@/components/DeleteJobButton";
+import ProgressLogForm from "@/components/ProgressLogForm";
+import AddPhotoForm from "@/components/AddPhotoForm";
+import AddMaterialForm from "@/components/AddMaterialForm";
 
 export const dynamic = "force-dynamic";
 
@@ -42,18 +45,7 @@ export default async function JobDetailPage({ params }: { params: { id: string }
       <section className="mt-8 pt-6 border-t border-line">
         <h2 className="text-sm text-muted mb-3">Photos</h2>
         <PhotoGallery photos={job.photos} />
-        <form action={addPhotoWithId} className="flex items-center gap-2 mt-3">
-          <input
-            type="file"
-            name="photo"
-            accept="image/*"
-            required
-            className="text-sm file:mr-3 file:border-0 file:bg-ink file:text-paper file:px-3 file:py-1.5 file:text-sm"
-          />
-          <button type="submit" className="btn-secondary shrink-0">
-            Add
-          </button>
-        </form>
+        <AddPhotoForm action={addPhotoWithId} />
       </section>
 
       {/* Materials */}
@@ -65,45 +57,13 @@ export default async function JobDetailPage({ params }: { params: { id: string }
           </Link>
         </div>
         <MaterialsList jobId={job.id} materials={job.materials} />
-        <form action={addMaterialWithId} className="flex flex-wrap items-end gap-2 mt-4">
-          <div className="flex-1 min-w-[140px]">
-            <label className="field-label" htmlFor="name">
-              Item
-            </label>
-            <input id="name" name="name" required className="field-input" placeholder="e.g. Hinges" />
-          </div>
-          <div className="w-28">
-            <label className="field-label" htmlFor="quantity">
-              Qty
-            </label>
-            <input id="quantity" name="quantity" className="field-input" placeholder="x2" />
-          </div>
-          <button type="submit" className="btn-secondary">
-            Add item
-          </button>
-        </form>
+        <AddMaterialForm action={addMaterialWithId} />
       </section>
 
       {/* Progress log */}
       <section className="mt-8 pt-6 border-t border-line">
         <h2 className="text-sm text-muted mb-3">Progress log</h2>
-        <form action={addProgressWithId} className="flex flex-col gap-3 mb-6">
-          <div>
-            <label className="field-label" htmlFor="note">
-              What did you do / notice?
-            </label>
-            <textarea id="note" name="note" required rows={3} className="field-input" />
-          </div>
-          <div>
-            <label className="field-label" htmlFor="next_steps">
-              Next steps
-            </label>
-            <textarea id="next_steps" name="next_steps" rows={2} className="field-input" />
-          </div>
-          <button type="submit" className="btn-primary self-start">
-            Add log entry
-          </button>
-        </form>
+        <ProgressLogForm action={addProgressWithId} />
 
         <div className="flex flex-col gap-4">
           {job.progress_log.length === 0 && (
