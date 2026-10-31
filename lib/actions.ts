@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabase/server";
-import type { Job, JobArea, JobStatus, JobWithDetails } from "@/lib/types";
+import type { Job, JobArea, JobStatus, JobWithDetails, QuickTask } from "@/lib/types";
 
 const BUCKET = process.env.SUPABASE_STORAGE_BUCKET || "diy-tracker-photos";
 
@@ -18,6 +18,25 @@ export async function getJobs(statuses: JobStatus[]): Promise<Job[]> {
     .order("updated_at", { ascending: false });
   if (error) throw error;
   return data as Job[];
+}
+
+// Most recent non-empty next_steps from the progress log, keyed by job id.
+export async function getLatestNextSteps(jobIds: string[]): Promise<Record<string, string>> {
+  if (jobIds.length === 0) return {};
+  const sb = supabaseAdmin();
+  const { data, error } = await sb
+    .from("progress_log")
+    .select("job_id, next_steps")
+    .in("job_id", jobIds)
+    .not("next_steps", "is", null)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  const result: Record<string, string> = {};
+  for (const row of data ?? []) {
+    const text = (row.next_steps as string).trim();
+    if (text && !(row.job_id in result)) result[row.job_id] = text;
+  }
+  return result;
 }
 
 export async function getJobWithDetails(id: string): Promise<JobWithDetails | null> {
@@ -181,4 +200,75 @@ export async function deleteJob(jobId: string) {
   revalidatePath("/");
   revalidatePath("/archive");
   redirect("/");
+}
+
+// ---------- quick tasks ----------
+
+export async function getQuickTasks(): Promise<{ open: QuickTask[]; recentlyDone: QuickTask[] }> {
+  const sb = supabaseAdmin();
+  const [{ data: open, error: openError }, { data: done, error: doneError }] = await Promise.all([
+    sb.from("quick_tasks").select("*").eq("done", false).order("created_at", { ascending: true }),
+    sb
+      .from("quick_tasks")
+      .select("*")
+      .eq("done", true)
+      .order("done_at", { ascending: false })
+      .limit(10),
+  ]);
+  if (openError) throw openError;
+  if (doneError) throw doneError;
+  return { open: (open ?? []) as QuickTask[], recentlyDone: (done ?? []) as QuickTask[] };
+}
+
+// Sentence case: first letter capitalised, the rest lower case. Words typed
+// entirely in capitals (e.g. "TV", "BT") are kept as acronyms, unless the
+// whole task was typed in capitals.
+function toSentenceCase(input: string): string {
+  const text = input.trim().replace(/\s+/g, " ");
+  if (!text) return text;
+  const allCaps = text === text.toUpperCase();
+  const words = text.split(" ").map((w) =>
+    !allCaps && w.length > 1 && w === w.toUpperCase() && /[A-Z]/.test(w) ? w : w.toLowerCase()
+  );
+  const joined = words.join(" ");
+  return joined.charAt(0).toUpperCase() + joined.slice(1);
+}
+
+export async function addQuickTask(formData: FormData) {
+  const title = toSentenceCase(String(formData.get("title") || ""));
+  const area = String(formData.get("area") || "house") as JobArea;
+  if (!title) throw new Error("Task is required");
+
+  const sb = supabaseAdmin();
+  const { error } = await sb.from("quick_tasks").insert({ title, area });
+  if (error) throw error;
+  revalidatePath("/");
+}
+
+export async function updateQuickTask(taskId: string, formData: FormData) {
+  const title = toSentenceCase(String(formData.get("title") || ""));
+  const area = String(formData.get("area") || "house") as JobArea;
+  if (!title) throw new Error("Task is required");
+
+  const sb = supabaseAdmin();
+  const { error } = await sb.from("quick_tasks").update({ title, area }).eq("id", taskId);
+  if (error) throw error;
+  revalidatePath("/");
+}
+
+export async function setQuickTaskDone(taskId: string, done: boolean) {
+  const sb = supabaseAdmin();
+  const { error } = await sb
+    .from("quick_tasks")
+    .update({ done, done_at: done ? new Date().toISOString() : null })
+    .eq("id", taskId);
+  if (error) throw error;
+  revalidatePath("/");
+}
+
+export async function deleteQuickTask(taskId: string) {
+  const sb = supabaseAdmin();
+  const { error } = await sb.from("quick_tasks").delete().eq("id", taskId);
+  if (error) throw error;
+  revalidatePath("/");
 }

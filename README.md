@@ -82,6 +82,9 @@ project (not `public`):
 - `materials` — checkable materials list per job; the shopping-list
   view at `/jobs/[id]/shopping-list` is just this table filtered/rendered
   for a phone screen
+- `quick_tasks` — small/cleaning jobs (e.g. "clean the oven") shown in the
+  Quick tasks panel at the top of the dashboard; just a title, area and
+  done flag — no statuses, photos, materials or progress log
 
 ## Regression test plan
 

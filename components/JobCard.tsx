@@ -10,7 +10,7 @@ const CORNER_COLORS: Record<Job["status"], string> = {
   archived: "before:bg-line",
 };
 
-export default function JobCard({ job }: { job: Job }) {
+export default function JobCard({ job, nextSteps }: { job: Job; nextSteps?: string }) {
   return (
     <Link
       href={`/jobs/${job.id}`}
@@ -21,6 +21,12 @@ export default function JobCard({ job }: { job: Job }) {
       <h3 className="text-base font-medium mb-2 leading-snug">{job.title}</h3>
       {job.description && (
         <p className="text-sm text-muted line-clamp-2 mb-3">{job.description}</p>
+      )}
+      {nextSteps && (
+        <p className="text-sm mb-3 line-clamp-2">
+          <span className="font-mono text-xs text-muted">Next: </span>
+          {nextSteps}
+        </p>
       )}
       <StatusBadge status={job.status} />
     </Link>

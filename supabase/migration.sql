@@ -81,3 +81,22 @@ drop trigger if exists jobs_updated_at on diy_tracker.jobs;
 create trigger jobs_updated_at
   before update on diy_tracker.jobs
   for each row execute function diy_tracker.jobs_set_updated_at();
+
+-- ---------------------------------------------------------------------
+-- Quick tasks: small/cleaning jobs that don't need the full job workflow
+-- (no statuses, photos, materials or progress log) — just add and tick off.
+-- Safe to re-run.
+-- ---------------------------------------------------------------------
+create table if not exists diy_tracker.quick_tasks (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  area text check (area in ('house', 'garden', 'other')) default 'house',
+  done boolean not null default false,
+  done_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists quick_tasks_done_idx on diy_tracker.quick_tasks(done);
+
+alter table diy_tracker.quick_tasks enable row level security;
+grant all on diy_tracker.quick_tasks to service_role;

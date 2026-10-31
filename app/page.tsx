@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { getJobs } from "@/lib/actions";
+import { getJobs, getLatestNextSteps, getQuickTasks } from "@/lib/actions";
 import JobCard from "@/components/JobCard";
+import QuickTasks from "@/components/QuickTasks";
 import type { JobStatus } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +13,11 @@ const COLUMNS: { status: JobStatus; heading: string }[] = [
 ];
 
 export default async function DashboardPage() {
-  const jobs = await getJobs(["todo", "planning", "started"]);
+  const [jobs, quickTasks] = await Promise.all([
+    getJobs(["todo", "planning", "started"]),
+    getQuickTasks(),
+  ]);
+  const nextSteps = await getLatestNextSteps(jobs.map((j) => j.id));
 
   return (
     <main className="max-w-5xl mx-auto px-4 py-8">
@@ -25,6 +30,8 @@ export default async function DashboardPage() {
           Add a job
         </Link>
       </header>
+
+      <QuickTasks open={quickTasks.open} recentlyDone={quickTasks.recentlyDone} />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {COLUMNS.map((col) => {
@@ -39,7 +46,7 @@ export default async function DashboardPage() {
                   <p className="text-sm text-muted/70 italic">Nothing here.</p>
                 )}
                 {colJobs.map((job) => (
-                  <JobCard key={job.id} job={job} />
+                  <JobCard key={job.id} job={job} nextSteps={nextSteps[job.id]} />
                 ))}
               </div>
             </section>

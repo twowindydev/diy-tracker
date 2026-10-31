@@ -37,6 +37,15 @@ export interface Material {
   created_at: string;
 }
 
+export interface QuickTask {
+  id: string;
+  title: string;
+  area: JobArea;
+  done: boolean;
+  done_at: string | null;
+  created_at: string;
+}
+
 export interface JobWithDetails extends Job {
   photos: JobPhoto[];
   progress_log: ProgressLogEntry[];
